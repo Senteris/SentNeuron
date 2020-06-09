@@ -38,7 +38,7 @@ image_ds = path_ds.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
 label_ds = tf.data.Dataset.from_tensor_slices(tf.cast(all_image_labels, tf.int64))
 image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
 
-BATCH_SIZE = 16
+BATCH_SIZE = 224
 
 # Установка размера буфера перемешивания, равного набору данных, гарантирует
 # полное перемешивание данных.
@@ -64,9 +64,9 @@ print(f"Loading done: {ds}")
 
 model = tf.keras.Sequential([
     mobile_net,
-    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dropout(0.2),
     tf.keras.layers.GlobalAveragePooling2D(),
-    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dropout(0.2),
     tf.keras.layers.Dense(len(label_names), activation='softmax')])
 
 model.compile(optimizer=tf.keras.optimizers.Adam(),
@@ -76,21 +76,20 @@ model.compile(optimizer=tf.keras.optimizers.Adam(),
 steps_per_epoch = tf.math.ceil(train_size / BATCH_SIZE).numpy()
 validation_steps = tf.math.ceil(val_size / BATCH_SIZE).numpy()
 
-history = model.fit(train_dataset, epochs=20, steps_per_epoch=steps_per_epoch, validation_data=val_dataset, validation_steps=validation_steps)
+history = model.fit(train_dataset, epochs=16, steps_per_epoch=steps_per_epoch)
 
 print("Fit done")
 
 acc = history.history['accuracy']
-acc_val = history.history['val_accuracy']
+#acc_val = history.history['val_accuracy']
 loss = history.history['loss']
-loss_val = history.history['val_loss']
+#loss_val = history.history['val_loss']
 
 print(model.evaluate(test_dataset))
 
 plt.figure(figsize=(8, 8))
 plt.subplot(2, 1, 1)
 plt.plot(acc, label='Training Accuracy')
-plt.plot(acc_val, label='Validation Accuracy')
 plt.legend(loc='lower right')
 plt.ylabel('Accuracy')
 plt.ylim([min(plt.ylim()), 1])
@@ -98,7 +97,6 @@ plt.title('Training and Validation Accuracy')
 
 plt.subplot(2, 1, 2)
 plt.plot(loss, label='Training Loss')
-plt.plot(loss_val, label='Validation Loss')
 plt.legend(loc='upper right')
 plt.ylabel('Cross Entropy')
 plt.ylim([0, 1.0])
