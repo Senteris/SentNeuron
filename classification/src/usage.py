@@ -1,14 +1,19 @@
-import os
+#region Settings
+IMAGE_SIZE = 256
+#endregion
 
+#region imports
+import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
 from tensorflow.keras.preprocessing.image import load_img
 import numpy as np
 from tensorflow.python.keras.models import model_from_json
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import pathlib
+
+#endregion
 
 images_to_predict = [str(path) for path in pathlib.Path('../images_to_predict/').glob('*')]
 

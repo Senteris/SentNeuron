@@ -1,15 +1,24 @@
-import os
+#region Settings
+BATCH_SIZE = 224
+IMAGE_SIZE = 256
+EPOCHS = 16
+TEST = False
+#endregion
 
+#region imports
+import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
 import pathlib
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.python.data.ops.dataset_ops import AUTOTUNE
 
+#endregion
+
 print("Loading dataset from folder")
 
+#region Get paths
 data_root = pathlib.Path('../data/')
 
 all_image_paths = list(data_root.glob('*/*'))
@@ -22,45 +31,43 @@ print(label_to_index)
 
 all_image_labels = [label_to_index[pathlib.Path(path).parent.name]
                     for path in all_image_paths]
+#endregion
 
-
+#region Creating dataset
 def load_and_preprocess_image(path):
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=3)
-    image = tf.image.resize(image, [128, 128])
+    image = tf.image.resize(image, [IMAGE_SIZE, IMAGE_SIZE])
     image /= 255.0  # normalize to [0,1] range
 
     return image
-
 
 path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
 image_ds = path_ds.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
 label_ds = tf.data.Dataset.from_tensor_slices(tf.cast(all_image_labels, tf.int64))
 image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
-
-BATCH_SIZE = 224
-
-# Установка размера буфера перемешивания, равного набору данных, гарантирует
-# полное перемешивание данных.
+# Установка размера буфера перемешивания, равного набору данных, гарантирует полное перемешивание данных.
 ds = image_label_ds.shuffle(buffer_size=image_count)
 ds = ds.repeat()
 ds = ds.batch(BATCH_SIZE)
 # `prefetch` позволяет датасету извлекать пакеты в фоновом режиме, во время обучения модели.
 ds = ds.prefetch(buffer_size=AUTOTUNE)
 
-mobile_net = tf.keras.applications.MobileNetV2(input_shape=(128, 128, 3), include_top=False)
-mobile_net.trainable = False
+#endregion
 
-train_size = int(0.8 * image_count)
-val_size = int(0.15 * image_count)
-test_size = int(0.05 * image_count)
+#region Splitting dataset
+train_size = int(0.95 * image_count)
 
-train_dataset = ds.take(train_size)  # Splitting dataset
+train_dataset = ds.take(train_size)
 test_dataset = ds.skip(train_size)
-val_dataset = test_dataset.skip(test_size)
-test_dataset = test_dataset.take(test_size)
+
+#endregion
 
 print(f"Loading done: {ds}")
+
+#region Creating model
+mobile_net = tf.keras.applications.MobileNetV2(input_shape=(IMAGE_SIZE, IMAGE_SIZE, 3), include_top=False)
+mobile_net.trainable = False
 
 model = tf.keras.Sequential([
     mobile_net,
@@ -73,19 +80,22 @@ model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss='sparse_categorical_crossentropy',
               metrics=["accuracy"])
 
-steps_per_epoch = tf.math.ceil(train_size / BATCH_SIZE).numpy()
-validation_steps = tf.math.ceil(val_size / BATCH_SIZE).numpy()
+#endregion
 
-history = model.fit(train_dataset, epochs=16, steps_per_epoch=steps_per_epoch)
+#region Training neuronet
+steps_per_epoch = tf.math.ceil(train_size / BATCH_SIZE).numpy()
+
+history = model.fit(train_dataset, epochs=EPOCHS, steps_per_epoch=steps_per_epoch)
+
+#endregion
 
 print("Fit done")
 
+#region Stats
 acc = history.history['accuracy']
-#acc_val = history.history['val_accuracy']
 loss = history.history['loss']
-#loss_val = history.history['val_loss']
 
-print(model.evaluate(test_dataset))
+if TEST: print(model.evaluate(test_dataset))
 
 plt.figure(figsize=(8, 8))
 plt.subplot(2, 1, 1)
@@ -104,8 +114,11 @@ plt.title('Training and Validation Loss')
 plt.xlabel('epoch')
 plt.show()
 
+#endregion
+
+#region Saving
 print("Saving")
-# Сохраняем сеть для последующего использования
+
 # Генерируем описание модели в формате json
 model_json = model.to_json()
 json_file = open("model.json", "w")
@@ -115,3 +128,5 @@ json_file.close()
 # Записываем данные о весах в файл
 model.save_weights("model.h5")
 print("Save done")
+
+#endregion
