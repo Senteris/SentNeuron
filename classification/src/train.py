@@ -13,6 +13,7 @@ import pathlib
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.python.data.ops.dataset_ops import AUTOTUNE
+import json
 
 #endregion
 
@@ -127,6 +128,9 @@ json_file.write(model_json)
 json_file.close()
 # Записываем данные о весах в файл
 model.save_weights("model.h5")
-print("Save done")
 
+with open('label_to_index.json', 'w') as fp:
+    json.dump(label_to_index, fp)
+
+print("Save done")
 #endregion

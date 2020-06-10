@@ -1,4 +1,6 @@
 #region Settings
+import json
+
 IMAGE_SIZE = 256
 #endregion
 
@@ -21,7 +23,7 @@ images_to_predict = [str(path) for path in pathlib.Path('../images_to_predict/')
 def load_and_preprocess_image(path):
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=3)
-    image = tf.image.resize(image, [128, 128])
+    image = tf.image.resize(image, [IMAGE_SIZE, IMAGE_SIZE])
     image /= 255.0  # normalize to [0,1] range
 
     return image
@@ -38,10 +40,8 @@ model = model_from_json(loaded_model_json)
 model.load_weights("model.h5")
 print("Loading done")
 
-data_root = pathlib.Path('../data/')
-
-label_names = sorted(item.name for item in data_root.glob('*/') if item.is_dir())
-label_to_index = dict((name, index) for index, name in enumerate(label_names))
+with open('label_to_index.json', 'r') as fp:
+    label_to_index = json.load(fp)
 
 print("Predict...")
 
