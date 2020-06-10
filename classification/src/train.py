@@ -1,7 +1,7 @@
 #region Settings
-BATCH_SIZE = 224
+BATCH_SIZE = 60
 IMAGE_SIZE = 256
-EPOCHS = 16
+EPOCHS = 20
 TEST = False
 #endregion
 
@@ -72,9 +72,9 @@ mobile_net.trainable = False
 
 model = tf.keras.Sequential([
     mobile_net,
-    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dropout(0.22),
     tf.keras.layers.GlobalAveragePooling2D(),
-    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dropout(0.22),
     tf.keras.layers.Dense(len(label_names), activation='softmax')])
 
 model.compile(optimizer=tf.keras.optimizers.Adam(),

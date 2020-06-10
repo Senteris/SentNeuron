@@ -1,4 +1,3 @@
-# classification
-classification/data/*
+*/data/*
 classification/images_to_predict/*
 venv/
