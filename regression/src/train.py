@@ -1,9 +1,11 @@
 #region Settings
+import json
 import sys
 EPOCHS = 200
 TEST = True
 POPING_COLUMN = "Weighted_Price"
 BATCH_SIZE = 60
+DATASET_PATH = '../data/dataset.csv'
 #endregion
 
 #region imports
@@ -18,16 +20,12 @@ from tensorflow.keras import layers
 
 #endregion
 
-#region Get paths
-dataset_path = '../data/bitstampUSD_data_2012_to_2020.csv'
-
-#endregion
 
 #region Import dataset
 print("Start importing the dataset")
 column_names = ['Timestamp','Open','High','Low','Close',
                 'Volume_(BTC)', 'Volume_(Currency)', 'Weighted_Price']
-raw_dataset = pd.read_csv(dataset_path, names=column_names,
+raw_dataset = pd.read_csv(DATASET_PATH, names=column_names,
                       na_values = "NaN",
                       sep=",", skipinitialspace=True)
 
@@ -138,4 +136,12 @@ if TEST:
     _ = plt.plot([-100, 100], [-100, 100])
     plt.title("Testing set Mean Abs Error: {:5.2f} {}".format(mae, POPING_COLUMN))
     plt.show()
+#endregion
+
+#region Saving
+print("Saving")
+
+model.save('my_model.h5')
+
+print("Save done")
 #endregion
